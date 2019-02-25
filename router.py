@@ -29,7 +29,7 @@ class Server():
     def serveClient(self, client, address):
         name = "{}:{}".format(address[0], address[1])
         print("Connected to", name)
-        client.send('Hi, I\'m the thread that will be processing your requests :)'.encode())
+        # client.send('Hi, I\'m the thread that will be processing your requests :)'.encode())
         size = 1024
         while True:
             try:
@@ -37,6 +37,7 @@ class Server():
                 if data:
                     # Response for now is just an echo back of same data
                     # This is where RequestParser would come into play
+                    print(data.decode())
                     response = data
                     client.send(response)
                 else:
