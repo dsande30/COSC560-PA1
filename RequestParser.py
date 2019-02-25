@@ -22,37 +22,41 @@ class RequestParser:
 
     def parseRequest(self, request):
         """Parse given request."""
-        logging.debug(request)
         str_request = io.StringIO(request)
         lines = str_request.readlines()
-        for line in lines:
-            self.checkMetaData(line)
-            self.checkType(line)
+        self.checkData(lines[0].strip())
+        self.checkHost(lines[1].strip())
+        logging.debug("Error code: " + str(self.error_code))
+        logging.debug("Action: " + str(self.action))
+        logging.debug("Version: " + str(self.version))
+        logging.debug("Host: " + str(self.host))
+        logging.debug("Port: " + str(self.port))
+        logging.debug("Path: " + str(self.path))
 
 
-    def checkMetaData(self, line):
-        """Check for http version, hostname, port."""
-        get_http_version = re.compile(r"^\w*\s\/[\w.\-\/]*\sHTTP\/")
-        get_host = re.compile(r"^Host:\ [\w]*")
-        get_port = re.compile(r"^Host:\ [\w]*:\w+")
 
-        logging.debug("Checking metadata.")
-        logging.debug("Scanning line {}".format(line).strip())
+    def checkData(self, line):
+        """Get request acion, pathname, and HTTP version."""
+        split_line = line.split()
+        self.action = split_line[0]
+        self.path = split_line[1]
 
-        print(get_http_version.findall(line, re.IGNORECASE))
+        version = split_line[2].split('/')
+        self.version = version[1]
 
 
-    def checkType(self, line):
-        """Check if it's a GET or POST."""
-
-        logging.debug("Checking type.")
+    def checkHost(self, line):
+        """Gather hostname and port."""
+        split_line = line.split(':')
+        self.host = split_line[1]
+        if len(split_line) > 2:
+            self.port = split_line[2]
 
 
 if __name__ == "__main__":
     """Note: run main only to debug!!"""
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    DEBUG_request = """
-GET / HTTP/1.1
+    DEBUG_request = """GET / HTTP/1.1
 Host: localhost:8888
 Connection: keep-alive
 Upgrade-Insecure-Requests: 1
@@ -62,5 +66,5 @@ Accept-Encoding: gzip, deflate, br
 Accept-Language: en-US,en;q=0.9
 Cookie: Phpstorm-19ce36aa=054a9f1e-e611-46ec-a0dd-3594013dd076
     """
-    rp = RequestParser(DEBUG_request)
+    rp = RequestParser()
     rp.parseRequest(DEBUG_request)
