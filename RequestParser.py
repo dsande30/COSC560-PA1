@@ -22,28 +22,13 @@ class RequestParser:
 
     def checkType(self, line):
         """Check if it's a GET or POST."""
-        get_http_version = re.compile(r"^\w*\s\/\sHTTP\/")
-        get_host = re.compile(r"^Host:\ ")
+        get_http_version = re.compile(r"^\w*\s\/[\w.\-\/]*\sHTTP\/")
+        get_host = re.compile(r"^Host:\ [\w]*")
+        get_port = re.compile(r"^Host:\ [\w]*:\w+")
 
+        logging.debug("Scanning line {}".format(line).strip())
 
-        """
-        FIXME:
-        Some thoughts:
-            These regexes don't work, but I'm not sure how we want to fix them.
-            https://url.spec.whatwg.org/#url-representation lays out the standard for how a browser
-            parses a URL.
-            We need to implement:
-                check type (ftp, http, etc) and use default port
-                allow for custom port using ':'
-                
-            I'll finish this up hopefully tomorrow night. Need to read up more and figure out how
-            I wanna do this.
-        """
-
-        for m in get_http_version.finditer(line, re.IGNORECASE):
-            logging.debug("HTTP VERSION: " + line[m.end():])
-        for n in get_host.finditer(line, re.IGNORECASE):
-            logging.debug("HOSTNAME:" + line[n.end():])
+        print(get_http_version.findall(line, re.IGNORECASE))
 
 
 if __name__ == "__main__":
