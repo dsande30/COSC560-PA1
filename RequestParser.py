@@ -10,25 +10,42 @@ import logging, sys, io, re
 
 class RequestParser:
     """Base object for parsing http headers."""
-    
+
+    def __init__(self):
+        self.error_code = 200
+        self.action = ''
+        self.version = 0
+        self.host = ''
+        self.port = 0
+        self.path = ''
+
+
     def parseRequest(self, request):
         """Parse given request."""
         logging.debug(request)
         str_request = io.StringIO(request)
         lines = str_request.readlines()
         for line in lines:
+            self.checkMetaData(line)
             self.checkType(line)
 
 
-    def checkType(self, line):
-        """Check if it's a GET or POST."""
+    def checkMetaData(self, line):
+        """Check for http version, hostname, port."""
         get_http_version = re.compile(r"^\w*\s\/[\w.\-\/]*\sHTTP\/")
         get_host = re.compile(r"^Host:\ [\w]*")
         get_port = re.compile(r"^Host:\ [\w]*:\w+")
 
+        logging.debug("Checking metadata.")
         logging.debug("Scanning line {}".format(line).strip())
 
         print(get_http_version.findall(line, re.IGNORECASE))
+
+
+    def checkType(self, line):
+        """Check if it's a GET or POST."""
+
+        logging.debug("Checking type.")
 
 
 if __name__ == "__main__":
@@ -45,5 +62,5 @@ Accept-Encoding: gzip, deflate, br
 Accept-Language: en-US,en;q=0.9
 Cookie: Phpstorm-19ce36aa=054a9f1e-e611-46ec-a0dd-3594013dd076
     """
-    rp = RequestParser()
+    rp = RequestParser(DEBUG_request)
     rp.parseRequest(DEBUG_request)
