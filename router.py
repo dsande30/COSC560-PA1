@@ -26,20 +26,26 @@ class Server():
             client.settimeout(30) # times out if client inactive for 30 seconds
             threading.Thread(target = self.serveClient, args = (client,address)).start()
 
+    def recvall(self, client):
+        BUFF_SIZE = 4096 # 4 KiB
+        data = b''
+        while True:
+            part = client.recv(BUFF_SIZE)
+            data += part
+            if len(part) < BUFF_SIZE:
+                # either 0 or end of data
+                break
+        return data
+
     def serveClient(self, client, address):
         name = "{}:{}".format(address[0], address[1])
         print("Connected to", name)
         # client.send('Hi, I\'m the thread that will be processing your requests :)'.encode())
-        size = 1024
         while True:
             try:
-                data = client.recv(size)
+                data = self.recvall(client)
                 if data:
-                    # Response for now is just an echo back of same data
-                    # This is where RequestParser would come into play
-                    print(data.decode())
-                    response = data
-                    client.send(response)
+                    print(data)
                 else:
                     raise Exception('Client {} disconnected'.format(name))
             except Exception as e:
