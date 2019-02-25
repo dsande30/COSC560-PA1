@@ -2,7 +2,9 @@
 
 import socket
 import threading
-import sys
+import sys, os
+from RequestParser import RequestParser
+from Responder import Responder
 
 class Server():
     def __init__(self, ip, port):
@@ -45,7 +47,19 @@ class Server():
             try:
                 data = self.recvall(client)
                 if data:
-                    print(data)
+                    request = RequestParser()
+                    request.parseRequest(data.decode('utf-8'))
+                    # request.action = 'GET'
+                    # request.path = 'testfiles' + os.path.sep + 'index.html'
+                    # request.host = address[0]
+                    # request.port = address[1]
+                    response = Responder(request, client)
+                    if request.error_code != 200:
+                        response.sendError(request.error_code)
+                    elif request.action == 'GET':
+                        response.sendGET()
+                    elif request.action == 'POST':
+                        response.sendPOST()
                 else:
                     raise Exception('Client {} disconnected'.format(name))
             except Exception as e:
