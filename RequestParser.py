@@ -6,7 +6,7 @@ Basic HTTP server request parser.
     2. POST
 """
 
-import logging, sys, io, re
+import logging, sys, io, re, os
 
 class RequestParser:
     """Base object for parsing http headers."""
@@ -24,8 +24,11 @@ class RequestParser:
         """Parse given request."""
         str_request = io.StringIO(request)
         lines = str_request.readlines()
+        for line in lines:
+            if "Host" in line or "host" in line:
+                self.checkHost(line.strip())
         self.checkData(lines[0].strip())
-        self.checkHost(lines[1].strip())
+
         logging.debug("Error code: " + str(self.error_code))
         logging.debug("Action: " + str(self.action))
         logging.debug("Version: " + str(self.version))
@@ -39,7 +42,14 @@ class RequestParser:
         """Get request acion, pathname, and HTTP version."""
         split_line = line.split()
         self.action = split_line[0]
-        self.path = split_line[1]
+        if split_line[1] == '/':
+            self.path = os.path.normpath("testfiles" + os.path.sep + "index.html")
+            logging.debug(os.path.abspath(self.path))
+
+        else:
+            self.path = os.path.abspath('.') + os.path.sep + "testfiles" + split_line[1]
+            # if os.path.abspath(self.path):
+            #     self.error_code = 403
 
         version = split_line[2].split('/')
         self.version = version[1]
@@ -66,5 +76,21 @@ Accept-Encoding: gzip, deflate, br
 Accept-Language: en-US,en;q=0.9
 Cookie: Phpstorm-19ce36aa=054a9f1e-e611-46ec-a0dd-3594013dd076
     """
+    DEBUG_request2 = """POST /subdir/../../.. HTTP/1.1
+cache-control: no-cache
+Postman-Token: 44849fc1-d534-4d5c-8ae2-c8579bb50db7
+User-Agent: PostmanRuntime/7.6.0
+Accept: */*
+Host: localhost:8888
+accept-encoding: gzip, deflate
+content-type: multipart/form-data; boundary=--------------------------597180899412237102723079
+content-length: 164
+Connection: keep-alive
+
+----------------------------597180899412237102723079
+Content-Disposition: form-data; name="image"
+
+Swag
+----------------------------597180899412237102723079--"""
     rp = RequestParser()
-    rp.parseRequest(DEBUG_request)
+    rp.parseRequest(DEBUG_request2)
