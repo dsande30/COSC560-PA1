@@ -2,7 +2,9 @@
 
 import socket
 import threading
-import sys
+import sys, os
+from RequestParser import RequestParser
+from Responder import Responder
 
 class Server():
     def __init__(self, ip, port):
@@ -26,20 +28,38 @@ class Server():
             client.settimeout(30) # times out if client inactive for 30 seconds
             threading.Thread(target = self.serveClient, args = (client,address)).start()
 
+    def recvall(self, client):
+        BUFF_SIZE = 4096 # 4 KiB
+        data = b''
+        while True:
+            part = client.recv(BUFF_SIZE)
+            data += part
+            if len(part) < BUFF_SIZE:
+                # either 0 or end of data
+                break
+        return data
+
     def serveClient(self, client, address):
         name = "{}:{}".format(address[0], address[1])
         print("Connected to", name)
         # client.send('Hi, I\'m the thread that will be processing your requests :)'.encode())
-        size = 1024
         while True:
             try:
-                data = client.recv(size)
+                data = self.recvall(client)
                 if data:
-                    # Response for now is just an echo back of same data
-                    # This is where RequestParser would come into play
-                    print(data.decode())
-                    response = data
-                    client.send(response)
+                    request = RequestParser()
+                    request.parseRequest(data.decode('utf-8'))
+                    # request.action = 'GET'
+                    # request.path = 'testfiles' + os.path.sep + 'index.html'
+                    # request.host = address[0]
+                    # request.port = address[1]
+                    response = Responder(request, client)
+                    if request.error_code != 200:
+                        response.sendError(request.error_code)
+                    elif request.action == 'GET':
+                        response.sendGET()
+                    elif request.action == 'POST':
+                        response.sendPOST()
                 else:
                     raise Exception('Client {} disconnected'.format(name))
             except Exception as e:
