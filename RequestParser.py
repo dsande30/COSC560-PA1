@@ -8,6 +8,14 @@ Basic HTTP server request parser.
 
 import logging, sys, io, re, os
 
+# def parseForm(query):
+#     form_dict = {}
+#     for pair in query.split('&'):
+#         key, val = pair.split('=')
+#         form_dict[key] = val
+
+#     return form_dict
+
 class RequestParser:
     """Base object for parsing http headers."""
 
@@ -15,28 +23,30 @@ class RequestParser:
         self.error_code = 200
         self.action = ''
         self.version = 0
-        self.host = ''
-        self.port = 0
         self.path = ''
+        self.header = {}
 
 
     def parseRequest(self, request):
         """Parse given request."""
         str_request = io.StringIO(request)
         lines = str_request.readlines()
-        for line in lines:
-            if "Host" in line or "host" in line:
-                self.checkHost(line.strip())
+        last = lines[-1]
+        for line in lines[1:]:
+            if line is last:
+                self.header['Payload'] = line
+            else:
+                tmp = [x.strip() for x in line.split(':', 1)]
+                if len(tmp) == 2:
+                    self.header[tmp[0]] = tmp[1]
+
         self.checkData(lines[0].strip())
 
         logging.debug("Error code: " + str(self.error_code))
         logging.debug("Action: " + str(self.action))
         logging.debug("Version: " + str(self.version))
-        logging.debug("Host: " + str(self.host))
-        logging.debug("Port: " + str(self.port))
         logging.debug("Path: " + str(self.path))
-
-
+        logging.debug("Header: " + str(self.header))
 
     def checkData(self, line):
         """Get request acion, pathname, and HTTP version."""
@@ -54,14 +64,12 @@ class RequestParser:
         version = split_line[2].split('/')
         self.version = version[1]
 
-
     def checkHost(self, line):
         """Gather hostname and port."""
         split_line = line.split(':')
         self.host = split_line[1]
         if len(split_line) > 2:
             self.port = split_line[2]
-
 
 if __name__ == "__main__":
     """Note: run main only to debug!!"""
