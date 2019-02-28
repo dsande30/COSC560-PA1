@@ -29,7 +29,24 @@ class RequestParser:
 
     def parseRequest(self, request):
         """Parse given request."""
-        str_request = io.StringIO(request)
+        try:
+            str_request = io.StringIO(request.decode())
+        except:
+            ct = re.compile(b'(Content-Type: )(\S+)\r\n\r\n')
+            cl = re.compile(b'(Content-Length: )(\d*)')
+            tmp_ct = ct.search(request).groups()[1]
+            tmp_cl = cl.search(request).groups()[1]
+
+            index = request.find(tmp_ct)
+            index += len(tmp_ct) + 4
+
+            print(tmp_ct)
+            print(tmp_cl)
+            print(request[index:index+10])
+            with open('data/file', 'wb') as f:
+                f.write(request[index:])
+            # print(request[:start2-1].decode())
+
         lines = str_request.readlines()
         last = lines[-1]
         for line in lines[1:]:
