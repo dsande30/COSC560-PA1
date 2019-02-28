@@ -29,11 +29,12 @@ class Server():
             threading.Thread(target = self.serveClient, args = (client,address)).start()
 
     def recvall(self, client):
-        BUFF_SIZE = 4096 # 4 KiB
+        BUFF_SIZE = 512 # 4 KiB
         data = b''
         while True:
             part = client.recv(BUFF_SIZE)
             data += part
+            print("JUST GOT {} BYTES! TOTAL IS {}\n".format(len(part), len(data)))
             if len(part) < BUFF_SIZE:
                 # either 0 or end of data
                 break
@@ -46,10 +47,13 @@ class Server():
         while True:
             try:
                 data = self.recvall(client)
+                with open('data/original', 'wb') as f:
+                    f.write(data)
                 if data:
-                    print(data.decode('utf-8'))
+                    # print(data.decode('utf-8'))
                     request = RequestParser()
-                    request.parseRequest(data.decode())
+                    # request.parseRequest(data.decode())
+                    request.parseRequest(data)
                     # request.action = 'GET'
                     # request.path = 'testfiles' + os.path.sep + 'index.html'
                     # request.host = address[0]

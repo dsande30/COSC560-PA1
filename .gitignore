@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .vscode/
+data/
 .Python
 build/
 develop-eggs/
