@@ -55,6 +55,7 @@ class Server():
                         response.sendGET()
                     elif request.action == 'POST':
                         response.sendPOST()
+                    print('Served {}, disconnecting.'.format(name))
                     client.close()
                     return False
                 else:
