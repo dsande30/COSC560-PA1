@@ -67,9 +67,9 @@ class RequestParser:
     def checkHost(self, line):
         """Gather hostname and port."""
         split_line = line.split(':')
-        self.host = split_line[1]
-        if len(split_line) > 2:
-            self.port = split_line[2]
+        self.host = split_line[0]
+        if len(split_line) > 1:
+            self.port = split_line[1]
 
 if __name__ == "__main__":
     """Note: run main only to debug!!"""
