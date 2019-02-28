@@ -1,5 +1,4 @@
 import logging, sys, io, re, os
-from RequestParser import parseForm
 from urllib.parse import parse_qs
 
 class Responder():
@@ -8,7 +7,7 @@ class Responder():
         self.client = client
         self.name = name
         self.request = request
-        self.success = 'HTTP/{} 200 OK\r\n'\
+        self.success = 'HTTP/{} {} OK\r\n'\
                        'Content-Type: {}\r\n'\
                        'Content-Length: {}\r\n\r\n'
         self.mime_types = {
@@ -20,24 +19,41 @@ class Responder():
             '.css': 'text/css'
         }
 
+    def readAndSend(self, filename, version, code, mime):
+        with open(filename, 'rb') as f:
+            content = f.read()
+        success_header = self.success.format(version,
+                                            code,
+                                            mime,
+                                            len(content)
+                                            )
+        print("===RESPONSE HEADER===\n", success_header)                                            
+        response = success_header.encode() + content
+        self.client.sendall(response)
+
     def sendGET(self):
         """Send a GET request, dynamically determine type of file."""
         ext = os.path.splitext(self.request.path)[1]
-        with open(self.request.path, 'rb') as f:
-            content = f.read()
-        success_header = self.success.format(self.request.version,
-                                             self.mime_types[ext],
-                                             len(content)
-                                            )
-        print("===RESPONSE HEADER===\n", success_header)
-        response = success_header.encode() + content
-        self.client.sendall(response)
+        self.readAndSend(
+                        self.request.path,
+                        self.request.version,
+                        '200',
+                        self.mime_types[ext]
+                        )
     
     def sendPOST(self):
         header = self.request.header
         if header['Content-Type'] == 'application/x-www-form-urlencoded':
-            self.saveForm(header['Payload'])
-
+            try:
+                self.saveForm(header['Payload'])
+                self.readAndSend(
+                                'testfiles/success.html',
+                                self.request.version,
+                                '201',
+                                'text/html'
+                                )             
+            except Exception as e:
+                print(e)
                 
     def saveForm(self, content):
         if len(content) > 0:
