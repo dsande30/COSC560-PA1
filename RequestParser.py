@@ -6,15 +6,12 @@ Basic HTTP server request parser.
     2. POST
 """
 
-import logging, sys, io, re, os
-
-# def parseForm(query):
-#     form_dict = {}
-#     for pair in query.split('&'):
-#         key, val = pair.split('=')
-#         form_dict[key] = val
-
-#     return form_dict
+import logging
+import sys
+import io
+import re
+import os
+from urllib.parse import unquote
 
 class RequestParser:
     """Base object for parsing http headers."""
@@ -26,31 +23,31 @@ class RequestParser:
         self.path = ''
         self.header = {}
 
-
     def parseRequest(self, request):
         """Parse given request."""
         try:
             str_request = io.StringIO(request.decode())
+            self.parseHeader(str_request, True) 
         except:
             ct = re.compile(b'(Content-Type: )(\S+)\r\n\r\n')
-            cl = re.compile(b'(Content-Length: )(\d*)')
+            ext = re.compile(b'(filename=)(\")(.*\.)([\w.]*)(\")')
             tmp_ct = ct.search(request).groups()[1]
-            tmp_cl = cl.search(request).groups()[1]
+            tmp_ext = ext.search(request).groups()[3]
+            fname = ext.search(request).groups()[2]
+            end_header = request.find('\r\n\r\n'.encode())
+            index = request.find(tmp_ct) + len(tmp_ct) + 4 # get to start of content
 
-            index = request.find(tmp_ct)
-            index += len(tmp_ct) + 4
+            self.parseHeader(io.StringIO(request[:end_header].decode()), False)
+            self.header['Mime-Type'] = tmp_ct.decode()
+            self.header['Payload'] = request[index:]
+            self.path = './site/uploads/' + (fname + tmp_ext).decode()
 
-            print(tmp_ct)
-            print(tmp_cl)
-            print(request[index:index+10])
-            with open('data/file', 'wb') as f:
-                f.write(request[index:])
-            # print(request[:start2-1].decode())
-
-        lines = str_request.readlines()
+    def parseHeader(self, header, check_payload):
+        lines = header.readlines()
         last = lines[-1]
+
         for line in lines[1:]:
-            if line is last:
+            if line is last and check_payload:
                 self.header['Payload'] = line
             else:
                 tmp = [x.strip() for x in line.split(':', 1)]
@@ -59,63 +56,19 @@ class RequestParser:
 
         self.checkData(lines[0].strip())
 
-        logging.debug("Error code: " + str(self.error_code))
-        logging.debug("Action: " + str(self.action))
-        logging.debug("Version: " + str(self.version))
-        logging.debug("Path: " + str(self.path))
-        logging.debug("Header: " + str(self.header))
-
     def checkData(self, line):
         """Get request acion, pathname, and HTTP version."""
         split_line = line.split()
         self.action = split_line[0]
         if split_line[1] == '/':
-            self.path = os.path.normpath("testfiles" + os.path.sep + "index.html")
+            self.path = os.path.normpath("site" + os.path.sep + "index.html")
             logging.debug(os.path.abspath(self.path))
 
         else:
-            self.path = os.path.abspath('.') + os.path.sep + "testfiles" + split_line[1]
-            # if os.path.abspath(self.path):
-            #     self.error_code = 403
+            if split_line[1] in ['/dir', '/uploads']:
+                self.path = split_line[1]
+            else:
+                self.path = unquote(os.path.abspath('.') + os.path.sep + "site" + split_line[1])
 
         version = split_line[2].split('/')
         self.version = version[1]
-
-    def checkHost(self, line):
-        """Gather hostname and port."""
-        split_line = line.split(':')
-        self.host = split_line[1]
-        if len(split_line) > 2:
-            self.port = split_line[2]
-
-if __name__ == "__main__":
-    """Note: run main only to debug!!"""
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    DEBUG_request = """GET / HTTP/1.1
-Host: localhost:8888
-Connection: keep-alive
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
-Accept-Encoding: gzip, deflate, br
-Accept-Language: en-US,en;q=0.9
-Cookie: Phpstorm-19ce36aa=054a9f1e-e611-46ec-a0dd-3594013dd076
-    """
-    DEBUG_request2 = """POST /subdir/../../.. HTTP/1.1
-cache-control: no-cache
-Postman-Token: 44849fc1-d534-4d5c-8ae2-c8579bb50db7
-User-Agent: PostmanRuntime/7.6.0
-Accept: */*
-Host: localhost:8888
-accept-encoding: gzip, deflate
-content-type: multipart/form-data; boundary=--------------------------597180899412237102723079
-content-length: 164
-Connection: keep-alive
-
-----------------------------597180899412237102723079
-Content-Disposition: form-data; name="image"
-
-Swag
-----------------------------597180899412237102723079--"""
-    rp = RequestParser()
-    rp.parseRequest(DEBUG_request2)

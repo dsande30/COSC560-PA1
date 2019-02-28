@@ -34,7 +34,6 @@ class Server():
         while True:
             part = client.recv(BUFF_SIZE)
             data += part
-            print("JUST GOT {} BYTES! TOTAL IS {}\n".format(len(part), len(data)))
             if len(part) < BUFF_SIZE:
                 # either 0 or end of data
                 break
@@ -43,21 +42,12 @@ class Server():
     def serveClient(self, client, address):
         name = "{}:{}".format(address[0], address[1])
         print("Connected to", name)
-        # client.send('Hi, I\'m the thread that will be processing your requests :)'.encode())
         while True:
             try:
                 data = self.recvall(client)
-                with open('data/original', 'wb') as f:
-                    f.write(data)
                 if data:
-                    # print(data.decode('utf-8'))
                     request = RequestParser()
-                    # request.parseRequest(data.decode())
                     request.parseRequest(data)
-                    # request.action = 'GET'
-                    # request.path = 'testfiles' + os.path.sep + 'index.html'
-                    # request.host = address[0]
-                    # request.port = address[1]
                     response = Responder(request, client, name)
                     if request.error_code != 200:
                         response.sendError(request.error_code)
