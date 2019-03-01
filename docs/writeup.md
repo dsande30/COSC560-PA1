@@ -18,9 +18,9 @@ Page A and page B demonstrate our ability to handle basic `GET` requests. Page C
 
 ![](./screenshots/survey.png "Page C")
 
-Page C allows the user to fill out a survey asking basic user information. Upon submitting, the site sends a `application/x-www-form-urlencoded POST` request to our server, which handles the data and stores it in a text file inside of `data/survey.txt` in the repository.
+Page C allows the user to fill out a survey asking basic user information. Upon submitting, the site sends a `application/x-www-form-urlencoded POST` request to our server, which handles the data and stores it in a text file inside of `data/survey_log.txt` in the repository.
 
-Page D allows the user to upload a file, which sends a `multipart/form-data` request to the server. To assist grading, we store the file in `data/` in the repository to be accessed as needed.
+Page D allows the user to upload a file, which sends a `multipart/form-data` request to the server. To assist grading, we store the file in `uploads/` in the repository to be accessed as needed.
 **NOTE:** We make no guarantees as to the speed of the upload process. This may take quite a while, especially for large files. We do not implement a loading screen, but you may find that your browser indicates the progress of the upload.
 
 ![](./screenshots/dir.png "Directory Listing")
@@ -55,7 +55,7 @@ If you click `Page B`, you will be routed to a very similar basic html page.
 ![](./screenshots/walkthrough/page2.png "page2.html")
 
 #### Step 4: Page C
-If you click `Page C`, you will be routed to the "Fun Survey!" page, where you can enter form data that will be submitted as an `application/x-www-form-urlencoded` POST request to the server. You can check the results of this request by looking at `data/`.
+If you click `Page C`, you will be routed to the "Fun Survey!" page, where you can enter form data that will be submitted as an `application/x-www-form-urlencoded` POST request to the server. You can check the results of this request by looking at `data/survey_log.txt`.
 
 ![](./screenshots/walkthrough/page3.png "page3.html")
 
