@@ -59,7 +59,6 @@ class Server():
             try:
                 data = self.recvall(client)
                 if data:
-                    print("here")
                     request = RequestParser(data) # initialize RequestParser object
                     request.parseRequest() # parse the request
                     response = Responder(request, client, name)
