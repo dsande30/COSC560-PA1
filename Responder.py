@@ -129,7 +129,7 @@ class Responder():
             if 'uploads' not in dirs:
                 html += '<p>*We only allow downloading of the following mime types: '\
                         '.ico, .html, .jpeg, .jpg, .png, .css, .csv, .txt, .xls, .xlsx, .pdf, .doc, .docx, .pptx '\
-                        '</p>'
+                        'Check "uploads/" directory on the server if you do not see your file here.</p>'
             html += '<table border="1" style="width:50%;text-align:center;margin-left:auto;margin-right:auto"> '\
                     '<tr><th>File</th><th>Size</th></tr>'
             if 'uploads' in dirs:
