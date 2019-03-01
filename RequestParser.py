@@ -1,9 +1,7 @@
 """
 Basic HTTP server request parser.
-
-*Tentatively* Parses the following types of requests:
-    1. GET
-    2. POST
+Parses HTTP headers and determines GET/POST actions
+Stores all header and content information in an object
 """
 
 import logging
@@ -16,48 +14,77 @@ from urllib.parse import unquote
 class RequestParser:
     """Base object for parsing http headers."""
 
-    def __init__(self):
+    def __init__(self, request):
+        """Store all REQUEST data in the object."""
         self.error_code = 200
         self.action = ''
         self.version = 0
         self.path = ''
         self.header = {}
+        self.request = request
 
-    def parseRequest(self, request):
+    def parseRequest(self):
         """Parse given request."""
         try:
-            str_request = io.StringIO(request.decode())
-            self.parseHeader(str_request, True) 
+            # this try statement catches GET and FORM POST requests
+            str_request = io.StringIO(self.request.decode())
+            self.parseHeader(str_request, True)
         except:
-            ct = re.compile(b'(Content-Type: )(\S+)\r\n\r\n')
-            ext = re.compile(b'(filename=)(\")(.*\.)([\w.]*)(\")')
-            tmp_ct = ct.search(request).groups()[1]
-            tmp_ext = ext.search(request).groups()[3]
-            fname = ext.search(request).groups()[2]
-            end_header = request.find('\r\n\r\n'.encode())
-            index = request.find(tmp_ct) + len(tmp_ct) + 4 # get to start of content
+            # the except statement catches multipart/form-data POST requests
+            self.parseMultiPart()
 
-            self.parseHeader(io.StringIO(request[:end_header].decode()), False)
-            self.header['Mime-Type'] = tmp_ct.decode()
-            self.header['Payload'] = request[index:]
-            self.path = './site/uploads/' + (fname + tmp_ext).decode()
+    def parseMultiPart(self):
+        """Parses multipart/form-data POST requests."""
+
+        request = self.request
+
+        # regex is used to separate header from content
+        ct = re.compile(b'(Content-Type: )(\S+)\r\n\r\n')
+        name = re.compile(b'(filename=)(\")(.*\.*)(\")')
+        tmp_ct = ct.search(request).groups()[1]
+        fname = name.search(request).groups()[2]
+        end_header = request.find('\r\n\r\n'.encode())
+        index = request.find(tmp_ct) + len(tmp_ct) + 4 # get to start of content
+
+        # content and header are now determined based on regex results
+        final_bound = 0
+        final_bound = request[index:].find('------WebKitForm'.encode())
+        if final_bound != 0:
+            self.header['Payload'] = request[index:index+final_bound]
+        else:
+            self.header['Payload'] = request[index:]            
+        self.header['Mime-Type'] = tmp_ct.decode()
+
+        # populates the header dictionary   
+        self.parseHeader(io.StringIO(request[:end_header].decode()), False)
+
+        # file name to be uploaded
+        self.path = './site/uploads/' + fname.decode()
 
     def parseHeader(self, header, check_payload):
+        """Parses the header of any given request."""
+
         lines = header.readlines()
         last = lines[-1]
 
+        # the header is converted to a string and parsed
+        # each key: val line is converted into a dict representation
         for line in lines[1:]:
             if line is last and check_payload:
                 self.header['Payload'] = line
             else:
                 tmp = [x.strip() for x in line.split(':', 1)]
                 if len(tmp) == 2:
+                    if 'multipart/form-data' in tmp[1] and "Payload" not in self.header:
+                        self.parseMultiPart()
+                        return 0                    
                     self.header[tmp[0]] = tmp[1]
 
         self.checkData(lines[0].strip())
 
     def checkData(self, line):
-        """Get request acion, pathname, and HTTP version."""
+        """Get request acion, pathname, and HTTP version from first line of a request."""
+        
         split_line = line.split()
         self.action = split_line[0]
         if split_line[1] == '/':

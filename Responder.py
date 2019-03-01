@@ -1,16 +1,23 @@
+"""
+Basic HTTP server request responder.
+Crafts correct HTTP responses based on the REQUEST
+Gets passed a RequestParser objects containing all request info
+"""
+
 import logging, sys, io, re, os
 from urllib.parse import parse_qs
 
 class Responder():
     def __init__(self, request, client, name):
         """Initialize our responder with defaults."""
+        
         self.client = client
         self.name = name
         self.request = request
         self.success = 'HTTP/{} {} OK\r\n'\
                        'Content-Type: {}\r\n'\
                        'Content-Length: {}\r\n\r\n'
-        self.mime_types = {
+        self.mime_types = { # the accepted MIME types for DOWNLOADING files
             '.ico': 'image/x-icon',
             '.html': 'text/html',
             '.jpeg': 'image/jpeg',
@@ -28,6 +35,8 @@ class Responder():
         }
 
     def readAndSend(self, filename, version, code, mime):
+        """Helper function to read a file and send it as a valid HTTP response."""
+
         if filename in ['/dir', '/uploads']:
             content = self.payload.encode()
         else:
@@ -42,8 +51,9 @@ class Responder():
         self.client.sendall(response)
 
     def sendGET(self):
-        """Send a GET request, dynamically determine type of file."""
-        if self.request.path == '/dir':
+        """Send a GET response, dynamically determine type of file."""
+
+        if self.request.path == '/dir': # our directory listing target path
             self.payload = self.generate_tree('./site')
             self.readAndSend(
                             self.request.path,
@@ -51,7 +61,7 @@ class Responder():
                             '200',
                             self.mime_types['.html']
                             )
-        elif self.request.path == '/uploads':
+        elif self.request.path == '/uploads': # our uploaded files listing target path
             self.payload = self.generate_tree('./site/uploads')
             self.readAndSend(
                             self.request.path,
@@ -69,7 +79,10 @@ class Responder():
                             )
     
     def sendPOST(self):
+        """Send a POST response (either form data or a file)."""
+
         header = self.request.header
+        # this is FORM data (e.g. our survey page)
         if header['Content-Type'] == 'application/x-www-form-urlencoded':
             try:
                 self.saveForm(header['Payload'])
@@ -81,6 +94,8 @@ class Responder():
                                 )             
             except Exception as e:
                 print(e)
+
+        # otherwise this is a file that we need to upload
         elif 'multipart/form-data' in header['Content-Type']:
             try:
                 with open(self.request.path, 'wb') as f:
@@ -95,6 +110,8 @@ class Responder():
                 print(e)
 
     def saveForm(self, content):
+        """Log the contents of a form POST (survey) submission."""
+
         if len(content) > 0:
             data = parse_qs(content)
             with open('data/survey_log.txt', 'a') as f:
@@ -104,6 +121,8 @@ class Responder():
                 f.write("="*50 + "\n")
 
     def generate_tree(self, path):
+        """Generate a listing of either root or uploads directory."""
+
         html = '<html><head><title>Directory Listing</title></head><body style="text-align:center;">'
         for root, dirs, files in os.walk(path, topdown=True):
             html += '<h1 style="text-align:center;">Directory Listing of {}</h1>'.format(root)
